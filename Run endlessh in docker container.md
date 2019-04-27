@@ -31,7 +31,7 @@ apt install -y docker-ce docker-ce-cli containerd.io
 }
 ```
 
-Or if you are working on an old system which use SysVinit to manage daemons:
+Or if you are working on an old system which use SysVinit to manage daemons:  
 **# vim `/etc/default/docker`**
 ```
 # Docker Upstart and SysVinit configuration file
@@ -126,12 +126,13 @@ docker run -d -p 22:22 --name c_endlessh \
 i_endlessh
 ```
 
-// In case you are using an alpine package mirror that only intranet accessible, try the following command:
-// As for Tencent CVM users, there are 2 DNS servers can use,
-// One is 183.60.83.19, another one is 183.60.82.98.
+// In case you are using an alpine package mirror that only intranet accessible, try the following command:  
+// As for Tencent CVM users, there are 2 DNS servers can use,  
+// One is 183.60.83.19, another one is 183.60.82.98.  
 `docker build -t i_endlessh --add-host=mirrors.tencentyun.com:$(dig @183.60.83.19 mirrors.tencentyun.com +short) .`
-~~// Somehow the above command doesn't work properly, quite perplexing.
-// In this guide, we solved the problem by specifying the DNS server used for docker containers in Step 2. (Or you can also type command `dockerd --dns 183.60.83.19` if you are not about to edit the daemon configuration file)
+
+~~// Somehow the above command doesn't work properly, quite perplexing.  
+// In this guide, we solved the problem by specifying the DNS server used for docker containers in Step 2. (Or you can also type command `dockerd --dns 183.60.83.19` if you are not about to edit the daemon configuration file)  
 // And there are two other ways to make containers be able to solve hosts which can only be solved in an intranet. Refer to the comment [here](https://github.com/moby/moby/issues/5779#issuecomment-478518282).~~
 
 **// WTF. Just remember one thing: the f\*\*king Tencent Mirrors doesn't provide an HTTPS service. I spent lots of time and tried in vain to check the DNS settings…**
@@ -142,4 +143,3 @@ i_endlessh
 docker container logs c_endlessh
 docker exec c_endlessh pkill -15 endlessh
 ```
-
