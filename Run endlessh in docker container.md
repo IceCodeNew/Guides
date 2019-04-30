@@ -21,6 +21,7 @@ apt update
 apt purge --autoremove docker docker-engine docker.io containerd runc
 apt install -y docker-ce docker-ce-cli containerd.io
 ```
+
 ---
 # 2. [Optional] Change the docker image source to a mirror
 **# vim `/etc/docker/daemon.json`**
@@ -55,6 +56,7 @@ DOCKER_OPTS="--dns 183.60.83.19 --registry-mirror=https://mirror.ccs.tencentyun.
 # This is also a handy place to tweak where Docker's temporary files go.
 #export DOCKER_TMPDIR="/mnt/bigdrive/docker-tmp"
 ```
+
 ---
 # 3. Get only the necessary files
 ```shell
@@ -66,6 +68,7 @@ mv ./util/smf/endlessh.conf /etc/endlessh/config
 mv Dockerfile Makefile endlessh.c /docker/endlessh
 rm -rf '/github/endlessh'
 ```
+
 ---
 # 4. Make sure the content of `/etc/endlessh/config` is the same as below:
 ```
@@ -97,6 +100,7 @@ LogLevel 1
 #   6 = Use IPv6 only
 BindFamily 0
 ```
+
 ---
 # 5. Edit the file `/docker/endlessh/Dockerfile` as below:
 ```dockerfile
@@ -115,8 +119,10 @@ EXPOSE 22/tcp
 ENTRYPOINT ["/endlessh"]
 CMD ["-f /etc/endlessh/config >/etc/endlessh/endlessh.log 2>/etc/endlessh/endlessh.err"]
 ```
+
 ---
 # 6. Build up docker image and start up a container
+
 ```shell
 cd /docker/endlessh/
 docker build -t i_endlessh .
@@ -138,7 +144,15 @@ i_endlessh
 **// WTF. Just remember one thing: the f\*\*king Tencent Mirrors doesn't provide an HTTPS service. I spent lots of time and tried in vain to check the DNS settings…**
 
 ---
-# 7. In some case, the following commands might be helpful:
+# 7. Append a crontab rule to make the container been restarted while the system has rebooted.
+**# sudo crontab -e -u root**
+```
+@reboot docker restart c_endlessh > /dev/null 2>&1 &
+```
+
+---
+# 8. In some case, the following commands might be helpful:
+
 ```shell
 docker container logs c_endlessh
 docker exec c_endlessh pkill -15 endlessh
