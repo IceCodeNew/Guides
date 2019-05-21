@@ -71,7 +71,6 @@ rm -rf '/github/endlessh'
 
 ---
 # 4. Make sure the content of `/etc/endlessh/config` is the same as below:
-
 ```
 # The port on which to listen for new SSH connections.
 Port 22
@@ -104,7 +103,6 @@ BindFamily 0
 
 ---
 # 5. Edit the file `/docker/endlessh/Dockerfile` as below:
-
 ```dockerfile
 FROM alpine AS builder
 RUN apk add --no-cache build-base
@@ -124,14 +122,13 @@ CMD ["-f /etc/endlessh/config >/etc/endlessh/endlessh.log 2>/etc/endlessh/endles
 
 ---
 # 6. Build up docker image and start up a container
-
 ```shell
 cd /docker/endlessh/
 docker build -t i_endlessh .
-docker system prune -af --volumes
 docker run -d -p 22:22 --name c_endlessh \
 --mount type=bind,src=/etc/endlessh,dst=/etc/endlessh \
 i_endlessh
+docker system prune -af --volumes
 ```
 
 // In case you are using an alpine package mirror that only intranet accessible, try the following command:  
@@ -154,7 +151,6 @@ i_endlessh
 
 ---
 # 8. In some case, the following commands might be helpful:
-
 ```shell
 docker container logs c_endlessh
 docker exec c_endlessh pkill -15 endlessh
