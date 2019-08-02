@@ -59,12 +59,15 @@ DOCKER_OPTS="--dns 183.60.83.19 --registry-mirror=https://mirror.ccs.tencentyun.
 #export DOCKER_TMPDIR="/mnt/bigdrive/docker-tmp"
 ```
 
+Don't forget restarting docker:
+`systemctl restart docker`
+
 ---
 # 3. Get only the necessary files
 ```shell
 mkdir -p /docker/endlessh; mkdir -p /etc/endlessh; mkdir -p /github
 cd /github
-git clone https://github.com/skeeto/endlessh.git
+git clone --depth 1 https://github.com/skeeto/endlessh.git
 cd endlessh
 mv ./util/smf/endlessh.conf /etc/endlessh/config
 mv Dockerfile Makefile endlessh.c /docker/endlessh
