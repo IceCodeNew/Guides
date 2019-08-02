@@ -29,6 +29,8 @@ apt install -y docker-ce docker-ce-cli containerd.io
 {
     "dns": ["183.60.83.19"],
     "registry-mirrors": ["https://mirror.ccs.tencentyun.com"]
+    "data-root": "/mnt/docker-data",
+    "storage-driver": "overlay2"
 }
 ```
 
