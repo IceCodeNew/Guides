@@ -133,6 +133,7 @@ docker build -t i_endlessh .
 docker run -d -p 22:22 --name c_endlessh \
 --mount type=bind,src=/etc/endlessh,dst=/etc/endlessh \
 i_endlessh
+docker update --restart=unless-stopped c_endlessh
 docker system prune -af --volumes
 ```
 
@@ -140,6 +141,10 @@ docker system prune -af --volumes
 // As for Tencent CVM users, there are 2 DNS servers can use,  
 // One is 183.60.83.19, another one is 183.60.82.98.  
 `docker build -t i_endlessh --add-host=mirrors.tencentyun.com:$(dig @183.60.83.19 mirrors.tencentyun.com +short) .`
+
+// Or if you are one of the Aliyun users (VM must be located in Beijing), there are also 2 DNS servers can use,  
+// One is 100.100.2.138, another one is 100.100.2.136.  
+`docker build -t i_endlessh --add-host=mirrors.cloud.aliyuncs.com:$(dig @100.100.2.138 mirrors.cloud.aliyuncs.com +short) .`
 
 ~~// Somehow the above command doesn't work properly, quite perplexing.  
 // In this guide, we solved the problem by specifying the DNS server used for docker containers in Step 2. (Or you can also type command `dockerd --dns 183.60.83.19` if you are not about to edit the daemon configuration file)  
