@@ -1,69 +1,21 @@
 # 1. Install docker-ce
 ```shell
-apt update
-apt autoremove --purge
-apt full-upgrade -y
-apt install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
+. /etc/os-release
+echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
+sudo apt --autoremove -y purge docker docker-engine docker.io containerd runc  docker-ce docker-ce-cli containerd.io
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) \
-    stable"
+sudo apt-key del '0EBFCD88'
+sudo sed -i '/docker/d' /etc/apt/sources.list
 
-apt update
-apt purge --autoremove docker docker-engine docker.io containerd runc
-apt install -y docker-ce docker-ce-cli containerd.io
+sudo apt update
+sudo apt --purge autoremove
+sudo apt -y full-upgrade
+sudo apt -y install podman
 ```
 
 ---
-# 2. [Optional] Change the docker image source to a mirror
-**# vim `/etc/docker/daemon.json`**
-```json
-{
-    "dns": ["183.60.83.19"],
-    "registry-mirrors": ["https://mirror.ccs.tencentyun.com"],
-    "data-root": "/mnt/docker-data",
-    "storage-driver": "overlay2"
-}
-```
-
-Or if you are working on an old system which use SysVinit to manage daemons:  
-**# vim `/etc/default/docker`**
-```
-# Docker Upstart and SysVinit configuration file
-
-#
-# THIS FILE DOES NOT APPLY TO SYSTEMD
-#
-#   Please see the documentation for "systemd drop-ins":
-#   https://docs.docker.com/engine/admin/systemd/
-#
-
-# Customize location of Docker binary (especially for development testing).
-#DOCKERD="/usr/local/bin/dockerd"
-
-# Use DOCKER_OPTS to modify the daemon startup options.
-DOCKER_OPTS="--dns 183.60.83.19 --registry-mirror=https://mirror.ccs.tencentyun.com"
-
-# If you need Docker to use an HTTP proxy, it can also be specified here.
-#export http_proxy="http://127.0.0.1:3128/"
-
-# This is also a handy place to tweak where Docker's temporary files go.
-#export DOCKER_TMPDIR="/mnt/bigdrive/docker-tmp"
-```
-
-Don't forget restarting docker:
-`systemctl restart docker`
-
----
-# 3. Get only the necessary files
+# 2. Get only the necessary files
 ```shell
 mkdir -p /docker/endlessh; mkdir -p /etc/endlessh; mkdir -p /github
 cd /github
@@ -75,7 +27,7 @@ rm -rf '/github/endlessh'
 ```
 
 ---
-# 4. Make sure the content of `/etc/endlessh/config` is the same as below:
+# 3. Make sure the content of `/etc/endlessh/config` is the same as below:
 ```
 # The port on which to listen for new SSH connections.
 Port 22
@@ -107,13 +59,13 @@ BindFamily 0
 ```
 
 ---
-# 5. Edit the file `/docker/endlessh/Dockerfile` as below:
+# 4. Edit the file `/docker/endlessh/Dockerfile` as below:
 ```dockerfile
 FROM alpine AS builder
-RUN apk add --no-cache build-base
 # To specify a mirror, use the following commands instead:
 # RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tencentyun.com/g' /etc/apk/repositories
-# RUN apk add --no-cache build-base
+# RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.cloud.aliyuncs.com/g' /etc/apk/repositories
+RUN apk add --no-cache build-base
 
 COPY endlessh.c Makefile /
 RUN make
@@ -126,42 +78,39 @@ CMD ["-f /etc/endlessh/config >/etc/endlessh/endlessh.log 2>/etc/endlessh/endles
 ```
 
 ---
-# 6. Build up docker image and start up a container
+# 5. Build up docker image and start up a container
 ```shell
 cd /docker/endlessh/
-docker build -t i_endlessh .
-docker run -d -p 22:22 --name c_endlessh \
---mount type=bind,src=/etc/endlessh,dst=/etc/endlessh \
-i_endlessh
-docker update --restart=unless-stopped c_endlessh
-docker system prune -af --volumes
+podman build -t i_endlessh .
 ```
 
 // In case you are using an alpine package mirror that only intranet accessible, try the following command:  
 // As for Tencent CVM users, there are 2 DNS servers can use,  
 // One is 183.60.83.19, another one is 183.60.82.98.  
-`docker build -t i_endlessh --add-host=mirrors.tencentyun.com:$(dig @183.60.83.19 mirrors.tencentyun.com +short) .`
+`podman build -t i_endlessh --add-host=mirrors.tencentyun.com:$(dig @183.60.83.19 mirrors.tencentyun.com +short) .`
 
 // Or if you are one of the Aliyun users (VM must be located in Beijing), there are also 2 DNS servers can use,  
 // One is 100.100.2.138, another one is 100.100.2.136.  
-`docker build -t i_endlessh --add-host=mirrors.cloud.aliyuncs.com:$(dig @100.100.2.138 mirrors.cloud.aliyuncs.com +short) .`
+`podman build -t i_endlessh --add-host=mirrors.cloud.aliyuncs.com:$(dig @100.100.2.138 mirrors.cloud.aliyuncs.com +short) .`
 
-~~// Somehow the above command doesn't work properly, quite perplexing.  
-// In this guide, we solved the problem by specifying the DNS server used for docker containers in Step 2. (Or you can also type command `dockerd --dns 183.60.83.19` if you are not about to edit the daemon configuration file)  
-// And there are two other ways to make containers be able to solve hosts which can only be solved in an intranet. Refer to the comment [here](https://github.com/moby/moby/issues/5779#issuecomment-478518282).~~
-
-**// WTF. Just remember one thing: the f\*\*king Tencent Mirrors doesn't provide an HTTPS service. I spent lots of time and tried in vain to check the DNS settings…**
-
----
-# 7. Append a crontab rule to make the container been restarted while the system has rebooted.
-**# sudo crontab -e -u root**
-```
-@reboot docker restart c_endlessh > /dev/null 2>&1 &
-```
-
----
-# 8. In some case, the following commands might be helpful:
 ```shell
-docker container logs c_endlessh
-docker exec c_endlessh pkill -15 endlessh
+podman run --restart=unless-stopped --name c_endlessh \
+           --mount type=bind,src=/etc/endlessh,dst=/etc/endlessh \
+           -d -p 22:22 \
+           i_endlessh
+
+podman generate systemd -f -n c_endlessh --restart-policy=always
+sudo mv container-c_endlessh.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable --now container-c_endlessh.service
+systemctl status container-c_endlessh.service
+
+podman system prune -af --volumes
+```
+
+---
+# 6. In some case, the following commands might be helpful:
+```shell
+podman container logs c_endlessh
+podman exec c_endlessh pkill -15 endlessh
 ```
